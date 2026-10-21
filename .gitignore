@@ -1,3 +1,5 @@
 .venv
 .env
 pyproject.toml
+image.png
+temp_files
