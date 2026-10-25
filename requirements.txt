@@ -2,3 +2,8 @@ openai
 python-dotenv
 pyyaml
 requests
+httpx
+fastapi
+uvicorn
+python-multipart
+extract-version

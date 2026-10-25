@@ -1,5 +1,6 @@
 .venv
 .env
 pyproject.toml
-image.png
-temp_files
+workspace
+__init__.py
+__pycache__
