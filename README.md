@@ -4,7 +4,7 @@
 
 First migration target: **Pydantic v1 → v2**. The pipeline itself is library-agnostic.
 
-- **Live demo:** `https://reforge-181098358760.us-central1.run.app/`
+- **Live demo:** https://reforge-181098358760.us-central1.run.app/
 - **Demo video:** `<YouTube URL>`
 - **Track:** Coding and Agentic Engineering
 
