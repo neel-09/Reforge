@@ -414,6 +414,7 @@
     $("#stageStack").innerHTML = ""; $("#console").innerHTML = ""; $("#logCount").textContent = "0 lines";
     $("#railFill").style.width = "0"; $("#rail").classList.add("running");
     $("#finale").classList.remove("on"); $("#view-trace").classList.remove("finishing");
+    $("#continueBtn").hidden = true; $("#continueBtn").classList.remove("on");
     ["costActual", "costUltra", "costSaved"].forEach((id) => ($("#" + id).textContent = "—"));
     $$(".tier").forEach((t) => { t.classList.remove("pulse"); $("i", t).style.width = "0"; $(".tier-count", t).textContent = "0"; });
     const nodes = $("#railNodes"); nodes.innerHTML = "";
@@ -540,6 +541,8 @@
     if (failed) return;
     if (!state.result) return showError(null, "The run ended without a result.");
     stopClock("total");
+    log("✓ Run complete — review the trace, then press Continue", "stage");
+    await waitContinue();
     await finale(state.result);
     renderResults(state.result, input);
     showView("results");
@@ -570,6 +573,15 @@
       return startRun(input, fake);
     }
     runTrace(input, demoEvents(input));
+  }
+
+  // Hold on the finished trace until the user presses Continue (bottom-right).
+  function waitContinue() {
+    const b = $("#continueBtn");
+    b.hidden = false; requestAnimationFrame(() => b.classList.add("on"));
+    return new Promise((resolve) => {
+      b.onclick = () => { b.onclick = null; b.classList.remove("on"); b.hidden = true; resolve(); };
+    });
   }
 
   async function finale(r) {
@@ -1033,6 +1045,7 @@ def first(team: UserList) -> User:
   function goHome() {
     if (state.running) return toast("A run is in progress — it will finish in the background.");
     $$(".sheet.open, .drawer.open, .modal.open").forEach(closeOverlay);
+    const cb = $("#continueBtn"); cb.hidden = true; cb.classList.remove("on");
     showView("landing"); setTimeout(() => state.landing.focus(), 600);
   }
 

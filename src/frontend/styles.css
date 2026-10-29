@@ -606,3 +606,12 @@ code, pre, .code, .console-body span, .composer-input.is-code, .file-ico, .stage
 .reveal-btn svg { width: 18px; height: 18px; }
 .reveal-btn .eye-shut, .reveal-btn.on .eye-open { display: none; }
 .reveal-btn.on .eye-shut { display: block; }
+
+/* ---------- Continue to results (after a finished run) ---------- */
+.continue-btn { position: fixed; right: 28px; bottom: 28px; z-index: 7; display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 22px; border-radius: 999px; font-size: 16px; box-shadow: 0 0 0 6px var(--ember-soft), 0 10px 40px rgba(255,107,44,.35);
+  opacity: 0; transform: translateY(12px); transition: opacity .45s var(--ease), transform .45s var(--ease); }
+.continue-btn.on { opacity: 1; transform: none; }
+.continue-btn span { transition: transform .2s; }
+.continue-btn:hover span { transform: translateX(3px); }
+@media (max-width: 720px) { .continue-btn { right: 16px; bottom: 16px; } }
