@@ -1,4 +1,4 @@
-import ast, re, httpx
+import ast, re, textwrap, httpx
 from typing import Optional
 
 GITHUB_REPO_REGEX = re.compile(r"^https?://(?:www\.)?github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?(?:/.*)?$")
@@ -25,25 +25,35 @@ def normalize_github_url(url: str) -> Optional[str]:
     return None
 
 def normalize_pasted_code(raw_text: str) -> str:
-    """Strips Markdown fences, inline formatting, and adds baseline imports if missing."""
-    text = raw_text.strip()
-    # Strip markdown code blocks
-    text = re.sub(r"^```[a-zA-Z0-9_-]*\n?", "", text)
-    text = re.sub(r"\n?```$", "", text)
-    # Strip inline backticks and bold/italics
-    text = re.sub(r"`([^`\n\r]+)`", r"\1", text)
-    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
-    # Remove standalone Markdown title/header lines (lines starting with # followed by space)
-    text = re.sub(r"^\s*#+\s+.*$", "", text, flags=re.MULTILINE)
-    text = re.sub(r"\n\s*\n\s*\n", "\n\n", text).strip()
+    """Turn pasted input into a Python module.
+
+    * Markdown with ``` fences -> the code inside the fences (prose around them is dropped).
+    * Input that already parses as Python -> left untouched (keeps comments, **kwargs, backticks in strings).
+    * Anything else -> best-effort markdown cleanup.
+    """
+    text = textwrap.dedent(raw_text.replace("\r\n", "\n")).strip("\n")
+    fences = re.findall(r"^\s*```[A-Za-z0-9_+-]*[^\n]*\n(.*?)^\s*```\s*$", text, flags=re.S | re.M)
+    if fences:
+        text = "\n\n".join(textwrap.dedent(f).strip("\n") for f in fences)
+    elif not _parses(text):
+        text = text.strip()
+        text = re.sub(r"^```[a-zA-Z0-9_-]*\n?", "", text)
+        text = re.sub(r"\n?```$", "", text)
+        text = re.sub(r"`([^`\n\r]+)`", r"\1", text)
+        text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+        text = re.sub(r"^\s*#+\s+.*$", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\n\s*\n\s*\n", "\n\n", text).strip()
 
     # Auto-prepend missing Pydantic imports if BaseModel subclass is present
     if "BaseModel" in text and "from pydantic" not in text and "import pydantic" not in text:
         text = "from typing import List, Optional, Dict, Any\nfrom pydantic import BaseModel, Field, validator, root_validator\n\n" + text
 
-    # Syntax sanity check
+    return text + "\n"
+
+
+def _parses(text: str) -> bool:
     try:
         ast.parse(text)
+        return True
     except SyntaxError:
-        pass
-    return text
+        return False

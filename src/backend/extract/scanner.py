@@ -15,8 +15,12 @@ def scan_environment(ws_path: Path | str, input_type: str) -> dict:
 
     if input_type == "github":
         current_version, companion_names = has_module(module_name, ws_path)
+        if current_version:
+            # requirements.txt exists: still scan the code (without rewriting the manifest)
+            _, migrated = has_no_specified_module(ws_path, write_manifest=False)
+            migrated = migrated or current_version.split(".")[0] == "1"
         # Fallback if github repo doesn't have a requirements.txt
-        if not current_version:
+        else:
             companion_names, migrated = has_no_specified_module(ws_path)
             current_version = "1.10.12"
     else:
@@ -36,7 +40,7 @@ def scan_environment(ws_path: Path | str, input_type: str) -> dict:
         migration=migrated)
 
 
-def has_no_specified_module(repo_dir: Path) -> tuple[list[str], bool]:
+def has_no_specified_module(repo_dir: Path, write_manifest: bool = True) -> tuple[list[str], bool]:
     has_pydantic = False
     has_v2 = False
     detected_v1 = set()
@@ -45,6 +49,9 @@ def has_no_specified_module(repo_dir: Path) -> tuple[list[str], bool]:
 
     # Iterate over all python files in the workspace directory instead of checking a single file
     for py_file in repo_dir.rglob("*.py"):
+        if any(part.startswith(".") or part in {"__pycache__", "site-packages", "node_modules"}
+               for part in py_file.relative_to(repo_dir).parts[:-1]):
+            continue  # skip .harness_venv / .sandbox_venv / .git etc.
         try:
             tree = ast.parse(py_file.read_text(encoding="utf-8"))
         except (SyntaxError, UnicodeDecodeError):
@@ -96,6 +103,9 @@ def has_no_specified_module(repo_dir: Path) -> tuple[list[str], bool]:
 
     companion_names = sorted([pkg for pkg in detected_deps if pkg.lower() != module_name])
     needs_migration = bool(detected_v1) or (has_pydantic and not has_v2)
+
+    if not write_manifest:
+        return companion_names, needs_migration
 
     # Automatically generate requirements.txt so harness.py can run isolated
     manifest_lines = [f"{module_name}==1.10.12"] + companion_names

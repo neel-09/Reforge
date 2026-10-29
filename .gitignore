@@ -2,5 +2,10 @@
 .env
 pyproject.toml
 workspace
-__init__.py
 __pycache__
+.pytest_cache
+data/
+Claude outputs
+/out.json
+/report.pdf
+*.pyc

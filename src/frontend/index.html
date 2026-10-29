@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reforge — autonomous code migration</title>
+  <meta name="description" content="Reforge upgrades Python repositories across breaking dependency releases and CVEs, verifies every patch in a sandbox and proves parity.">
+  <meta name="theme-color" content="#050505">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ─────────────── Top bar ─────────────── -->
+  <header class="topbar">
+    <button class="brand" id="brandHome" type="button" aria-label="Reforge home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M10 26V6h7.5a5.5 5.5 0 0 1 0 11H10" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/><path d="M16.5 17L23 26" fill="none" stroke="var(--ember)" stroke-width="2.3" stroke-linecap="round"/></svg>
+      <span>Reforge</span>
+    </button>
+    <nav class="topnav">
+      <a class="nav-btn nav-btn--solid" id="aboutBtn" href="assets/reforge-overview.pdf" target="_blank" rel="noopener">About</a>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- ─────────────── 1 · Landing ─────────────── -->
+    <section class="view view-landing is-active" id="view-landing" aria-label="Start a migration">
+      <canvas class="sparks" id="sparks" aria-hidden="true"></canvas>
+      <div class="forge-glow" aria-hidden="true"></div>
+
+      <div class="landing-main">
+      <div class="hero">
+        <p class="eyebrow reveal" style="--d:0">Nemotron-powered · Nebius Token Factory</p>
+        <h1 class="wordmark reveal" style="--d:1">Reforge</h1>
+        <p class="tagline reveal" style="--d:2">Legacy code, <em>re-forged</em>. Migrate across breaking releases, patch critical CVEs, and prove nothing broke.</p>
+
+        <div class="reveal" style="--d:3" id="landingComposer"></div>
+
+        <div class="hints reveal" style="--d:4">
+          <span class="hints-label">Try</span>
+          <button class="chip" type="button" data-sample="snippet">Sample Pydantic v1 model</button>
+          <button class="chip" type="button" data-sample="repo">A GitHub repository</button>
+          <button class="chip" type="button" data-sample="upload">Upload a .py file</button>
+        </div>
+      </div>
+
+      </div>
+
+      <ol class="landing-steps reveal" style="--d:5" aria-label="How it works">
+        <li><span>01</span>Scan &amp; baseline</li>
+        <li><span>02</span>Break in sandbox</li>
+        <li><span>03</span>Ground &amp; plan</li>
+        <li><span>04</span>Patch &amp; self-heal</li>
+        <li><span>05</span>Prove parity</li>
+      </ol>
+
+      <section class="faq-section reveal" style="--d:6" id="faqSection" aria-labelledby="faqToggle">
+        <button class="faq-toggle" id="faqToggle" type="button" aria-expanded="false" aria-controls="faqBody">
+          <span class="faq-toggle-kick">FAQ</span>
+          <span class="faq-toggle-title">Frequently asked <em>questions</em></span>
+          <svg class="faq-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="faq-body" id="faqBody"><div><div class="faq-list" id="faqInline"></div>
+          <p class="drawer-foot">Want the full picture? <a href="assets/reforge-overview.pdf" target="_blank" rel="noopener">Read the project overview →</a></p></div></div>
+      </section>
+      <footer class="site-foot">Reforge is an AI-based product and can make mistakes. Review every change before you use it.</footer>
+      <div class="drop-veil" id="dropVeil" aria-hidden="true"><div>Drop a <em>.py</em> file to reforge it</div></div>
+    </section>
+
+    <!-- ─────────────── 2 · Execution trace ─────────────── -->
+    <section class="view view-trace" id="view-trace" aria-label="Execution trace">
+      <div class="trace-wrap">
+        <div class="trace-head">
+          <div>
+            <p class="eyebrow">Execution trace <span class="trace-mode" id="traceMode"></span></p>
+            <h2 class="trace-title">Forging <em id="traceTarget">your code</em></h2>
+          </div>
+          <div class="clock-box">
+            <div class="clock" id="clock">00:00.0</div>
+            <div class="clock-sub" id="clockSub">elapsed</div>
+          </div>
+        </div>
+
+        <div class="rail" id="rail">
+          <div class="rail-track"><div class="rail-fill" id="railFill"></div><div class="rail-spark" id="railSpark"></div></div>
+          <ol class="rail-nodes" id="railNodes"></ol>
+        </div>
+
+        <div class="trace-grid">
+          <div class="stage-stack" id="stageStack" aria-live="polite"></div>
+          <aside class="trace-side">
+            <div class="panel router" id="router">
+              <div class="panel-head"><span>Model router</span><small>Lightning → Super → Ultra</small></div>
+              <div class="tier" data-tier="ultra"><div class="tier-name"><b>Ultra</b><small>Nemotron 3 Ultra · 550B MoE</small></div><div class="tier-bar"><i></i></div><span class="tier-count">0</span></div>
+              <div class="tier" data-tier="super"><div class="tier-name"><b>Super</b><small>Nemotron 3 Super · 120B MoE</small></div><div class="tier-bar"><i></i></div><span class="tier-count">0</span></div>
+              <div class="tier" data-tier="lightning"><div class="tier-name"><b>Lightning</b><small>Nemotron 3.5 Lightning · 30B MoE</small></div><div class="tier-bar"><i></i></div><span class="tier-count">0</span></div>
+              <div class="cost-meter">
+                <div><small>This run</small><b id="costActual">—</b></div>
+                <div><small>Ultra-only</small><b id="costUltra">—</b></div>
+                <div><small>Saved</small><b class="ember-text" id="costSaved">—</b></div>
+              </div>
+            </div>
+            <div class="panel console">
+              <div class="panel-head"><span>Live log</span><small id="logCount">0 lines</small></div>
+              <div class="console-body" id="console" role="log"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <div class="finale" id="finale" aria-hidden="true">
+        <div class="finale-inner">
+          <p class="eyebrow" id="finaleEyebrow">Parity verified</p>
+          <div class="finale-word">Forged.</div>
+          <p class="finale-sub" id="finaleSub"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 3 · Results ─────────────── -->
+    <section class="view view-results" id="view-results" aria-label="Results">
+      <div class="results">
+        <section class="chat">
+          <div class="chat-scroll" id="chatScroll"><div class="chat-inner" id="chatLog"></div></div>
+          <div class="chat-compose"><div id="chatComposer"></div></div>
+        </section>
+        <aside class="outputs" id="outputs">
+          <div class="outputs-head">
+            <div>
+              <p class="eyebrow">Outputs</p>
+              <h3 id="outTitle">Run artifacts</h3>
+            </div>
+            <span class="verdict" id="outVerdict">—</span>
+          </div>
+          <div class="out-meta" id="outMeta"></div>
+          <div class="out-group">
+            <p class="out-label">Refactored code</p>
+            <ul class="file-list" id="fileList"></ul>
+          </div>
+          <div class="out-group">
+            <p class="out-label">Reports</p>
+            <ul class="file-list" id="reportList"></ul>
+          </div>
+          <button class="solid-btn dl-all" id="dlAllBtn" type="button">↓ Download all outputs (.zip)</button>
+          <button class="ghost-btn new-run" id="newRunBtn" type="button">↺ Start a new run</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─────────────── File viewer ─────────────── -->
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="file-ico" id="sheetIco">py</span><div><h4 id="sheetTitle">file</h4><small id="sheetSub"></small></div></div>
+        <div class="sheet-tabs" id="sheetTabs" role="tablist"></div>
+        <div class="sheet-actions">
+          <a class="ghost-btn" id="sheetOpen" target="_blank" rel="noopener" hidden>Open ↗</a>
+          <button class="ghost-btn" id="sheetDownload" type="button">Download</button>
+          <button class="icon-btn" data-close type="button" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <div class="sheet-body" id="sheetBody"></div>
+    </div>
+  </div>
+
+  <!-- ─────────────── FAQ drawer ─────────────── -->
+  <div class="drawer" id="faq" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="faqTitle">
+      <div class="drawer-head"><h3 id="faqTitle">Questions, <em>answered</em></h3><button class="icon-btn" data-close type="button" aria-label="Close">✕</button></div>
+      <div class="faq-list" id="faqList"></div>
+      <p class="drawer-foot">Want the full picture? <a href="assets/reforge-overview.pdf" target="_blank" rel="noopener">Read the project overview →</a></p>
+    </div>
+  </div>
+
+  <!-- ─────────────── GitHub connect ─────────────── -->
+  <div class="modal" id="ghModal" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="ghTitle">
+      <div class="drawer-head">
+        <h3 id="ghTitle"><svg class="gh-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> Connect a repository</h3>
+        <button class="icon-btn" data-close type="button" aria-label="Close">✕</button>
+      </div>
+      <p class="modal-copy">Enter a repository URL, <em>owner/repo</em>, or just a GitHub username to browse its public repositories.</p>
+      <form class="gh-form" id="ghForm" autocomplete="off">
+        <input id="ghInput" type="text" placeholder="github.com/owner/repo  ·  owner/repo  ·  username" spellcheck="false">
+        <button class="solid-btn" type="submit">Find</button>
+      </form>
+      <div class="gh-results" id="ghResults"></div>
+    </div>
+  </div>
+
+  <!-- ─────────────── Notice (pre-flight stop) ─────────────── -->
+  <div class="modal" id="notice" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="modal-panel notice-panel" role="alertdialog" aria-modal="true" aria-labelledby="noticeTitle" aria-describedby="noticeMsg">
+      <div class="notice-ico" id="noticeIco" aria-hidden="true">!</div>
+      <h3 id="noticeTitle">Nothing to migrate</h3>
+      <p id="noticeMsg"></p>
+      <div class="notice-actions">
+        <a class="ghost-btn" href="assets/reforge-overview.pdf" target="_blank" rel="noopener">What does Reforge support?</a>
+        <button class="solid-btn" type="button" data-close>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── Judge key ─────────────── -->
+  <div class="modal" id="judgeModal" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="judgeTitle">
+      <div class="drawer-head">
+        <h3 id="judgeTitle">Judge access</h3>
+        <button class="icon-btn" data-close type="button" aria-label="Close">✕</button>
+      </div>
+      <p class="modal-copy" id="judgeCopy">Judges: enter the key from the Devpost testing instructions. It removes the public per-visitor run limit.</p>
+      <form class="gh-form" id="judgeForm" autocomplete="off">
+        <div class="secret-field">
+          <input id="judgeInput" type="text" placeholder="Judge key" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" data-lpignore="true">
+          <button class="reveal-btn" id="judgeReveal" type="button" aria-label="Show key" aria-pressed="false" title="Show key"><svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg><svg class="eye-shut" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7c1.9 0 3.5-.6 4.9-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+        </div>
+        <button class="solid-btn" type="submit">Unlock</button>
+      </form>
+      <button class="ghost-btn judge-clear" id="judgeClear" type="button" hidden>Remove key</button>
+    </div>
+  </div>
+
+  <!-- ─────────────── Daily limit reached ─────────────── -->
+  <div class="modal" id="limitModal" aria-hidden="true">
+    <div class="sheet-scrim" data-close></div>
+    <div class="modal-panel notice-panel" role="alertdialog" aria-modal="true" aria-labelledby="limitTitle" aria-describedby="limitMsg">
+      <div class="notice-ico" aria-hidden="true">⏳</div>
+      <h3 id="limitTitle">Daily limit reached</h3>
+      <p id="limitMsg"></p>
+      <div class="notice-actions">
+        <a class="solid-btn" id="limitVideo" target="_blank" rel="noopener">▶ Watch the demo video</a>
+        <button class="ghost-btn" type="button" data-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <template id="tpl-composer">
+    <form class="composer" autocomplete="off">
+      <div class="composer-chips"></div>
+      <textarea class="composer-input" rows="1" spellcheck="false" placeholder="Paste a GitHub URL or Pydantic v1 code…"></textarea>
+      <div class="composer-bar">
+        <div class="composer-tools">
+          <label class="tool-btn" title="Attach a .py file">
+            <input type="file" accept=".py,text/x-python" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 01-7.8-7.8l9.2-9.2a3.7 3.7 0 015.2 5.2l-9.2 9.2a1.8 1.8 0 01-2.6-2.6l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>Add file</span>
+          </label>
+          <button class="tool-btn gh-btn" type="button" title="Connect a GitHub repository">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>Connect GitHub</span>
+          </button>
+          <button class="tool-btn judge-btn" type="button" title="Enter a judge key">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>Judge key</span>
+          </button>
+        </div>
+        <div class="composer-right">
+          <span class="composer-hint">⏎ to forge · ⇧⏎ new line</span>
+          <button class="send-btn" type="submit" aria-label="Start Reforge">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </form>
+  </template>
+</body>
+</html>
