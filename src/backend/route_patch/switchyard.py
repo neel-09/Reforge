@@ -9,7 +9,7 @@ Phase A — patch (per FILE, files in parallel; tuned for a ~1 min end-to-end ru
        SEARCH/REPLACE block is applied on its own (bad blocks are dropped, good ones kept) and linted
        (no duplicate imports, no "Step N" comments) — reply capped at LIGHTNING_MAX_TOKENS
     2. steps still open -> the architect's own before/after ($0)
-    3. steps still open -> per-step escalation: Nemotron 3 Super, then Nemotron 3 Ultra
+    3. steps still open -> per-step escalation: Nemotron 3.5 Super VL, then Nemotron 3 Ultra
     requirements.txt (manifest) steps are applied straight from the plan ($0).
 
 Phase B — verify + heal
@@ -64,14 +64,18 @@ class Tier:
     max_tokens: int
     temperature: float
     thinking: bool = False   # Nemotron reasoning mode; off = direct answer (fewer tokens, no length cut-offs)
+    base_url: str = ""       # tier-specific Token Factory endpoint; "" = BASE_URL
 
 
 # src/model_catalog.md — model ids overridable via env (Token Factory naming)
 TIERS: dict[str, Tier] = {
     "lightning": Tier("lightning", env_key("REFORGE_LIGHTNING_MODEL") or "nvidia/Nemotron-3_5-Lightning",
                       0.06, 0.24, 8192, 0.2),
-    "super": Tier("super", env_key("REFORGE_SUPER_MODEL") or "nvidia/nemotron-3-super-120b-a12b",
-                  0.30, 0.90, 8192, 0.4),
+    # Nemotron 3.5 Super VL (120B MoE) replaces nemotron-3-super-120b-a12b (retired on Token Factory 2026-11-09).
+    # Its public endpoint is us-north1; override with REFORGE_SUPER_BASE_URL.
+    "super": Tier("super", env_key("REFORGE_SUPER_MODEL") or "nvidia/Nemotron-3.5-Super-VL",
+                  0.30, 0.90, 8192, 0.4,
+                  base_url=env_key("REFORGE_SUPER_BASE_URL") or "https://api.tokenfactory.us-north1.nebius.com/v1/"),
     "ultra": Tier("ultra", env_key("REFORGE_ULTRA_MODEL") or "nvidia/Nemotron-3-Ultra-550b-a55b",
                   1.00, 3.00, 16384, 0.6, True),
 }
@@ -233,7 +237,7 @@ class Ledger:
 # Nebius dispatch (+ reply cache)
 # --------------------------------------------------------------------------- #
 _MODEL_HINTS = {"lightning": ("lightning",),  # exact ids above win; hints only if renamed
-                "super": ("nemotron-3-super", "nemotron3-super"),
+                "super": ("nemotron-3.5-super", "nemotron-3-5-super", "super-vl"),
                 "ultra": ("nemotron-3-ultra", "nemotron3-ultra")}
 _ENV_MODEL = {"lightning": "REFORGE_LIGHTNING_MODEL", "super": "REFORGE_SUPER_MODEL", "ultra": "REFORGE_ULTRA_MODEL"}
 _RESOLVED: dict[str, Any] = {}
@@ -254,6 +258,9 @@ def resolve_models(api_key: str) -> dict:
     for k, hints in _MODEL_HINTS.items():
         if env_key(_ENV_MODEL[k]):
             info["source"][k] = "env"
+            continue
+        if TIERS[k].base_url and TIERS[k].base_url.rstrip("/") != BASE_URL.rstrip("/"):
+            info["source"][k] = f"own endpoint ({TIERS[k].base_url})"     # not in this region's /v1/models
             continue
         cur = TIERS[k].model
         if cur.lower() in low:
@@ -299,7 +306,7 @@ def dispatch(tier: Tier, messages: list[dict], *, api_key: str, timeout: float =
         except (OSError, json.JSONDecodeError):
             pass
     from openai import OpenAI
-    client = OpenAI(base_url=BASE_URL, api_key=api_key, timeout=timeout, max_retries=1)
+    client = OpenAI(base_url=tier.base_url or BASE_URL, api_key=api_key, timeout=timeout, max_retries=1)
     wire = [m if m["role"] != "user" else {"role": "user", "content": [{"type": "text", "text": m["content"]}]}
             for m in messages]
     kwargs = dict(model=tier.model, messages=wire, temperature=tier.temperature, top_p=0.95,

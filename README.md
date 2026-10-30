@@ -31,14 +31,16 @@ Reforge routes work by difficulty across three NVIDIA open models instead of sen
 | Tier | Model (Token Factory id) | Role |
 |---|---|---|
 | Ultra | `nvidia/Nemotron-3-Ultra-550b-a55b` (550B MoE) | Writes the refactor plan once per run; last-resort patching and healing |
-| Super | `nvidia/nemotron-3-super-120b-a12b` (120B MoE) | Escalation when Lightning misses a step; diagnoses and heals failing tests |
+| Super | `nvidia/Nemotron-3.5-Super-VL` (120B MoE) | Escalation when Lightning misses a step; diagnoses and heals failing tests |
+
+The Super tier uses Nemotron 3.5 Super VL, which replaces the retired `nemotron-3-super-120b-a12b`. It is served from Token Factory's us-north1 endpoint; override the model or endpoint with `REFORGE_SUPER_MODEL` / `REFORGE_SUPER_BASE_URL`.
 | Lightning | `nvidia/Nemotron-3_5-Lightning` (30B MoE) | Primary patcher — one call per file, carrying all of that file's steps |
 
 Model replies are validated, never trusted: plan steps on unknown files or test files are dropped, every breaking finding must be covered, patches must match exactly once and pass an AST syntax gate, and a heal that makes things worse is rolled back.
 
 ## How Nebius Token Factory helped
 
-- **All three tiers behind one OpenAI-compatible endpoint** — switching between Lightning, Super and Ultra is just a model id, which is what makes the cheap-first router practical.
+- **All three tiers through one OpenAI-compatible API** — switching between Lightning, Super and Ultra is just a model id (plus a regional base URL), which is what makes the cheap-first router practical.
 - **Cost transparency:** every dispatch is priced with Token Factory rates and logged to a cost ledger against an all-Ultra counterfactual.
 - **Reference run:** a full migration cost **$0.12 vs $0.32** on Ultra alone (**62% cheaper**); on its own, the patch stage saved **88.5%** ($0.0081 vs $0.0708).
 - Plan and patch reply caches make identical reruns cost $0.

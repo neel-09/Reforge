@@ -4,7 +4,7 @@
 | Tier Key | Model ID | Input Rate ($ / 1M tokens) | Output Rate ($ / 1M tokens) | Role / Usage Share |
 | :--- | :--- | :--- | :--- | :--- |
 | `lightning` | `nvidia/Nemotron-3.5-Lightning` | $0.06 | $0.24 | Primary code patcher (~80%) |
-| `super` | `nvidia/Nemotron-3-Super` | $0.30 | $0.90 | Self-healing diagnosis (~15%) |
+| `super` | `nvidia/Nemotron-3.5-Super-VL` | $0.30 | $0.90 | Self-healing diagnosis (~15%) |
 | `ultra` | `nvidia/Nemotron-3-Ultra` | $1.00 | $3.00 | Refactoring planner (~5%) |
 
 ---
