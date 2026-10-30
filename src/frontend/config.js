@@ -9,5 +9,5 @@
 window.REFORGE_CONFIG = {
   API_BASE: "",
   DEMO: "auto",
-  DEMO_VIDEO_URL: "https://www.youtube.com/watch?v=REPLACE_ME",
+  DEMO_VIDEO_URL: "https://youtu.be/5xdMIWb8mXc",
 };
